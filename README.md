@@ -1,2 +1,2 @@
 # olga
-Hackathon Devs de Impacto
+Hackathon Devs de Impacto Grupo 15
