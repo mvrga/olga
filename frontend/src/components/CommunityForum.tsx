@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { Send, Image, Paperclip } from 'lucide-react';
-import { getCommunityForum, type CommunityMessage } from '@/lib/api';
+import { getCommunityForum, postCommunityForum, type CommunityMessage } from '@/lib/api';
 
 export function CommunityForum() {
   const [messages, setMessages] = useState<CommunityMessage[]>([]);
+  const [text, setText] = useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -72,6 +73,16 @@ export function CommunityForum() {
     }
   ];
 
+  async function handleSend() {
+    const content = text.trim();
+    if (!content) return;
+    try {
+      const res = await postCommunityForum({ author: 'Você', message: content, avatar: 'JS', isMe: true });
+      setMessages(res.messages);
+      setText('');
+    } catch {}
+  }
+
   return (
     <div className="space-y-4">
       {/* Chat Header */}
@@ -114,7 +125,6 @@ export function CommunityForum() {
         ))}
       </div>
 
-      {/* Input */}
       <div className="sticky bottom-0 bg-white rounded-xl p-3 flex items-center gap-2 border border-gray-200">
         <button className="p-2 text-gray-500">
           <Image className="size-5" />
@@ -126,8 +136,16 @@ export function CommunityForum() {
           type="text"
           placeholder="Escrever mensagem..."
           className="flex-1 px-3 py-2 bg-gray-50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
         />
-        <button className="p-2 bg-green-600 rounded-lg text-white">
+        <button className="p-2 bg-green-600 rounded-lg text-white" onClick={handleSend}>
           <Send className="size-5" />
         </button>
       </div>

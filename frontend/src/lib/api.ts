@@ -102,6 +102,13 @@ export async function getPlanningActive(): Promise<{ plans: PlanningActivePlan[]
   return request('/planning/active');
 }
 
+export async function createPlanningPlan(input: { crop: string; emoji: string; areaHa: number; startDate: string }): Promise<{ created: PlanningActivePlan; plans: PlanningActivePlan[] }> {
+  return request('/planning/active', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
 export type CommunityMessage = {
   author: string;
   avatar: string;
@@ -112,6 +119,13 @@ export type CommunityMessage = {
 
 export async function getCommunityForum(): Promise<{ messages: CommunityMessage[] }> {
   return request('/community/forum');
+}
+
+export async function postCommunityForum(input: { author: string; message: string; avatar?: string | null; isMe?: boolean }): Promise<{ created: CommunityMessage; messages: CommunityMessage[] }> {
+  return request('/community/forum', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
 }
 
 export type CommunityResource = {
@@ -130,6 +144,27 @@ export async function getCommunityResources(): Promise<{ resources: CommunityRes
   return request('/community/resources');
 }
 
+export async function addCommunityResource(input: {
+  name: string;
+  emoji: string;
+  owner: string;
+  location: string;
+  distance: string;
+  price: string;
+  unit: string;
+  rating: number;
+  available?: boolean;
+}): Promise<{ created: CommunityResource; resources: CommunityResource[] }> {
+  return request('/community/resources', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function reserveCommunityResource(index: number): Promise<{ resources: CommunityResource[] }> {
+  return request(`/community/resources/${index}/reserve`, { method: 'POST' });
+}
+
 export type MarketTrend = { product: string; trend: string; up: boolean };
 export type MarketOffer = {
   seller: string;
@@ -145,4 +180,21 @@ export type MarketOffer = {
 
 export async function getCommunityMarket(): Promise<{ trends: MarketTrend[]; offers: MarketOffer[] }> {
   return request('/community/market');
+}
+
+export async function addCommunityMarketOffer(input: {
+  seller: string;
+  product: string;
+  quantity: string;
+  price: string;
+  unit: string;
+  location: string;
+  image: string;
+  quality: string;
+  verified?: boolean;
+}): Promise<{ created: MarketOffer; offers: MarketOffer[]; trends: MarketTrend[] }> {
+  return request('/community/market', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
 }

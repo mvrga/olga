@@ -90,6 +90,26 @@ def get_planning_active() -> dict:
     return {"plans": _planning_active}
 
 
+def add_planning_plan(crop: str, emoji: str, area_ha: float, start_date: str) -> dict:
+    plan = {
+        "crop": crop,
+        "emoji": emoji,
+        "area": f"{area_ha} ha",
+        "progress": 0,
+        "daysRemaining": 90,
+        "nextTask": "Preparo do solo",
+        "health": 100,
+        "status": "healthy",
+        "planted": start_date,
+        "harvest": "+90d",
+        "weather": "Sol, 30°C",
+        "tasks": 0,
+        "alerts": [],
+    }
+    _planning_active.append(plan)
+    return plan
+
+
 _forum_messages = [
     {"author": "Maria Santos", "avatar": "MS", "message": "Bom dia pessoal! 🌅 Consegui eliminar pragas do tomate com calda de fumo.", "time": "08:24", "isMe": False},
     {"author": "Carlos Oliveira", "avatar": "CO", "message": "Maria, você usa quanto de fumo pra cada litro?", "time": "08:31", "isMe": False},
@@ -125,6 +145,27 @@ def get_resources() -> dict:
     return {"resources": _resources}
 
 
+def add_resource(name: str, emoji: str, owner: str, location: str, distance: str, price: str, unit: str, rating: float, available: bool = True) -> dict:
+    item = {
+        "name": name,
+        "emoji": emoji,
+        "owner": owner,
+        "location": location,
+        "distance": distance,
+        "price": price,
+        "unit": unit,
+        "rating": rating,
+        "available": available,
+    }
+    _resources.append(item)
+    return item
+
+
+def reserve_resource(index: int) -> None:
+    if 0 <= index < len(_resources):
+        _resources[index]["available"] = False
+
+
 _market_trends = [
     {"product": "Tomate", "trend": "+12%", "up": True},
     {"product": "Alface", "trend": "+8%", "up": True},
@@ -139,3 +180,19 @@ _market_offers = [
 
 def get_market() -> dict:
     return {"trends": _market_trends, "offers": _market_offers}
+
+
+def add_market_offer(seller: str, product: str, quantity: str, price: str, unit: str, location: str, image: str, quality: str, verified: bool = True) -> dict:
+    item = {
+        "seller": seller,
+        "product": product,
+        "quantity": quantity,
+        "price": price,
+        "unit": unit,
+        "location": location,
+        "image": image,
+        "quality": quality,
+        "verified": verified,
+    }
+    _market_offers.append(item)
+    return item

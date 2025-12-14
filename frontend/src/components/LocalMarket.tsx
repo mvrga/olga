@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { TrendingUp, TrendingDown, MapPin, DollarSign } from 'lucide-react';
-import { getCommunityMarket, type MarketOffer, type MarketTrend } from '@/lib/api';
+import { addCommunityMarketOffer, getCommunityMarket, type MarketOffer, type MarketTrend } from '@/lib/api';
 
 export function LocalMarket() {
   const [offers, setOffers] = useState<MarketOffer[]>([]);
   const [trends, setTrends] = useState<MarketTrend[]>([]);
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ seller: 'Você', product: '', quantity: '', price: 'R$ ', unit: '/kg', location: '1 km', image: '🛒', quality: 'Familiar', verified: true });
 
   useEffect(() => {
     let mounted = true;
@@ -88,6 +90,39 @@ export function LocalMarket() {
       </div>
 
       {/* Offers */}
+      <div className="bg-white rounded-xl p-4">
+        {!adding ? (
+          <button className="px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm" onClick={() => setAdding(true)}>
+            + Ofertar produto
+          </button>
+        ) : (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <input className="px-3 py-2 border rounded" placeholder="Produto" value={form.product} onChange={(e) => setForm({ ...form, product: e.target.value })} />
+              <input className="px-3 py-2 border rounded" placeholder="Quantidade" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
+              <input className="px-3 py-2 border rounded" placeholder="Preço (ex: R$ 4,50)" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+              <input className="px-3 py-2 border rounded" placeholder="Unidade (ex: /kg)" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} />
+              <input className="px-3 py-2 border rounded" placeholder="Emoji" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} />
+            </div>
+            <div className="flex gap-2">
+              <button
+                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm"
+                onClick={async () => {
+                  try {
+                    const res = await addCommunityMarketOffer(form);
+                    setOffers(res.offers);
+                    setAdding(false);
+                    setForm({ seller: 'Você', product: '', quantity: '', price: 'R$ ', unit: '/kg', location: '1 km', image: '🛒', quality: 'Familiar', verified: true });
+                  } catch {}
+                }}
+              >
+                Publicar oferta
+              </button>
+              <button className="px-4 py-2 border rounded-lg text-sm" onClick={() => setAdding(false)}>Cancelar</button>
+            </div>
+          </div>
+        )}
+      </div>
       {(offers.length ? offers : seedOffers).map((offer, idx) => (
         <div key={idx} className="bg-white rounded-xl p-4">
           <div className="flex gap-3 mb-3">

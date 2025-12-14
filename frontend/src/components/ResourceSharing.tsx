@@ -2,10 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { MapPin, Star, CheckCircle } from 'lucide-react';
-import { getCommunityResources, type CommunityResource } from '@/lib/api';
+import { addCommunityResource, getCommunityResources, reserveCommunityResource, type CommunityResource } from '@/lib/api';
 
 export function ResourceSharing() {
   const [resources, setResources] = useState<CommunityResource[]>([]);
+  const [adding, setAdding] = useState(false);
+  const [newItem, setNewItem] = useState({
+    name: '', emoji: '🛠️', owner: 'Você', location: 'Cabreúva', distance: '0.5 km', price: 'R$ 0', unit: '/dia', rating: 5,
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -52,6 +56,39 @@ export function ResourceSharing() {
   return (
     <div className="space-y-2">
       <p className="text-gray-900">Equipamentos Disponíveis</p>
+
+      <div className="bg-white rounded-xl p-4">
+        {!adding ? (
+          <button className="px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm" onClick={() => setAdding(true)}>
+            + Anunciar equipamento
+          </button>
+        ) : (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <input className="px-3 py-2 border rounded" placeholder="Nome" value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} />
+              <input className="px-3 py-2 border rounded" placeholder="Emoji" value={newItem.emoji} onChange={(e) => setNewItem({ ...newItem, emoji: e.target.value })} />
+              <input className="px-3 py-2 border rounded" placeholder="Preço (ex: R$ 50)" value={newItem.price} onChange={(e) => setNewItem({ ...newItem, price: e.target.value })} />
+              <input className="px-3 py-2 border rounded" placeholder="Unidade (ex: /dia)" value={newItem.unit} onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })} />
+            </div>
+            <div className="flex gap-2">
+              <button
+                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm"
+                onClick={async () => {
+                  try {
+                    const res = await addCommunityResource({ ...newItem, available: true, owner: 'Você', location: 'Cabreúva', distance: '0.5 km', rating: Number(newItem.rating) });
+                    setResources(res.resources);
+                    setAdding(false);
+                    setNewItem({ name: '', emoji: '🛠️', owner: 'Você', location: 'Cabreúva', distance: '0.5 km', price: 'R$ 0', unit: '/dia', rating: 5 });
+                  } catch {}
+                }}
+              >
+                Publicar
+              </button>
+              <button className="px-4 py-2 border rounded-lg text-sm" onClick={() => setAdding(false)}>Cancelar</button>
+            </div>
+          </div>
+        )}
+      </div>
       
       {(resources.length ? resources : seed).map((resource, idx) => (
         <div key={idx} className="bg-white rounded-xl p-4">
@@ -94,6 +131,12 @@ export function ResourceSharing() {
                       ? 'bg-green-600 text-white'
                       : 'bg-gray-200 text-gray-500'
                   }`}
+                  onClick={async () => {
+                    try {
+                      const res = await reserveCommunityResource(idx);
+                      setResources(res.resources);
+                    } catch {}
+                  }}
                 >
                   {resource.available ? 'Reservar' : 'Indisponível'}
                 </button>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { X, Sparkles, CheckCircle } from 'lucide-react';
+import { createPlanningPlan } from '@/lib/api';
 
 interface CropPlannerProps {
   onClose: () => void;
@@ -12,6 +13,7 @@ export function CropPlanner({ onClose }: CropPlannerProps) {
   const [area, setArea] = useState('');
   const [startDate, setStartDate] = useState('');
   const [showPlan, setShowPlan] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const handleGeneratePlan = () => {
     if (selectedCrop && area && startDate) {
@@ -148,10 +150,18 @@ export function CropPlanner({ onClose }: CropPlannerProps) {
                 Voltar
               </button>
               <button
-                onClick={onClose}
+                onClick={async () => {
+                  if (saving) return;
+                  setSaving(true);
+                  try {
+                    await createPlanningPlan({ crop: selectedCrop, emoji: cropEmojis[selectedCrop] || '🌱', areaHa: Number(area), startDate });
+                  } catch {}
+                  setSaving(false);
+                  onClose();
+                }}
                 className="flex-1 py-3 bg-green-600 text-white rounded-lg"
               >
-                Salvar
+                {saving ? 'Salvando...' : 'Salvar'}
               </button>
             </div>
           </div>
