@@ -1,9 +1,24 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { TrendingUp, TrendingDown, MapPin, DollarSign } from 'lucide-react';
+import { getCommunityMarket, type MarketOffer, type MarketTrend } from '@/lib/api';
 
 export function LocalMarket() {
-  const offers = [
+  const [offers, setOffers] = useState<MarketOffer[]>([]);
+  const [trends, setTrends] = useState<MarketTrend[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    getCommunityMarket().then((res) => {
+      if (!mounted) return;
+      setOffers(res.offers);
+      setTrends(res.trends);
+    }).catch(() => {});
+    return () => { mounted = false; };
+  }, []);
+
+  const seedOffers: MarketOffer[] = [
     {
       seller: 'Maria Santos',
       product: 'Tomate Orgânico',
@@ -39,7 +54,7 @@ export function LocalMarket() {
     }
   ];
 
-  const trends = [
+  const seedTrends: MarketTrend[] = [
     { product: 'Tomate', trend: '+12%', up: true },
     { product: 'Alface', trend: '+8%', up: true },
     { product: 'Cenoura', trend: '-3%', up: false },
@@ -54,7 +69,7 @@ export function LocalMarket() {
       <div className="bg-white rounded-xl p-4">
         <p className="text-sm text-gray-600 mb-3">Preços esta semana</p>
         <div className="grid grid-cols-2 gap-2">
-          {trends.map((trend, idx) => (
+          {(trends.length ? trends : seedTrends).map((trend, idx) => (
             <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
               <span className="text-sm text-gray-900">{trend.product}</span>
               <div className="flex items-center gap-1">
@@ -73,7 +88,7 @@ export function LocalMarket() {
       </div>
 
       {/* Offers */}
-      {offers.map((offer, idx) => (
+      {(offers.length ? offers : seedOffers).map((offer, idx) => (
         <div key={idx} className="bg-white rounded-xl p-4">
           <div className="flex gap-3 mb-3">
             <div className="text-4xl">{offer.image}</div>

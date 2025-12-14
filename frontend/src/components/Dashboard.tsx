@@ -1,142 +1,43 @@
 'use client';
 
 import { AlertTriangle, TrendingUp, Sun, CloudRain, Calendar, CheckCircle, Circle, Plus, Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getDashboard, toggleDashboardTodo, type DashboardData } from '@/lib/api';
 
 export function Dashboard({ onNavigateToPlanning, onNavigateToSuggestions }: { onNavigateToPlanning?: () => void; onNavigateToSuggestions?: () => void }) {
   const [selectedCrop, setSelectedCrop] = useState<number | null>(null);
+  const [data, setData] = useState<DashboardData | null>(null);
 
-  const todosToday = [
-    {
-      task: 'Fertilizar tomate',
-      crop: '🍅',
-      time: '06:00',
-      completed: false
-    },
-    {
-      task: 'Colher couve',
-      crop: '🥬',
-      time: '07:30',
-      completed: false
-    },
-    {
-      task: 'Verificar irrigação alface',
-      crop: '🥬',
-      time: '16:00',
-      completed: false
+  useEffect(() => {
+    let mounted = true;
+    getDashboard()
+      .then((d) => {
+        if (mounted) setData(d);
+      })
+      .catch(() => {
+        // fallback stays null; UI below handles gracefully
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const crops = data?.crops || [];
+  const todosToday = data?.todosToday || [];
+  const todosWeek = data?.todosWeek || [];
+  const weatherWeek = (data?.weatherWeek || []).map((w) => ({
+    ...w,
+    icon: w.rain > 70 ? CloudRain : Sun,
+  }));
+
+  async function handleToggleToday(index: number) {
+    try {
+      const next = await toggleDashboardTodo(index);
+      setData(next);
+    } catch (e) {
+      // no-op in demo
     }
-  ];
-
-  const todosWeek = [
-    {
-      day: 'Ter',
-      task: 'Aplicar calda de fumo no tomate',
-      crop: '🍅'
-    },
-    {
-      day: 'Qua',
-      task: 'Proteger cenoura da chuva',
-      crop: '🥕'
-    },
-    {
-      day: 'Qui',
-      task: 'Irrigar alface (manhã)',
-      crop: '🥬'
-    },
-    {
-      day: 'Sex',
-      task: 'Monitorar pragas em geral',
-      crop: '🔍'
-    },
-    {
-      day: 'Sáb',
-      task: 'Preparar área para brócolis',
-      crop: '🥦'
-    }
-  ];
-
-  const crops = [
-    {
-      name: 'Couve',
-      emoji: '🥬',
-      area: '1.5 ha',
-      health: 95,
-      daysToHarvest: 5,
-      status: 'ready',
-      insight: 'Preço alto no mercado',
-      planted: '10/Nov',
-      harvest: '19/Dez',
-      progress: 97,
-      tasks: [
-        { task: 'Colher couve', time: '07:30', completed: false },
-        { task: 'Preparar para venda', time: '10:00', completed: false }
-      ],
-      alerts: [],
-      weather: 'Sol, 30°C'
-    },
-    {
-      name: 'Tomate',
-      emoji: '🍅',
-      area: '3.5 ha',
-      health: 92,
-      daysToHarvest: 13,
-      status: 'healthy',
-      insight: 'Fertilizar amanhã',
-      planted: '03/Nov',
-      harvest: '27/Dez',
-      progress: 82,
-      tasks: [
-        { task: 'Fertilizar tomate', time: '06:00', completed: false },
-        { task: 'Verificar tutoramento', time: '15:00', completed: false }
-      ],
-      alerts: [],
-      weather: 'Chuva quarta (80mm)'
-    },
-    {
-      name: 'Cenoura',
-      emoji: '🥕',
-      area: '2.5 ha',
-      health: 68,
-      daysToHarvest: 32,
-      status: 'warning',
-      insight: 'Possível praga',
-      planted: '15/Nov',
-      harvest: '15/Jan',
-      progress: 52,
-      tasks: [
-        { task: 'Proteger cenoura da chuva', time: 'Quarta', completed: false },
-        { task: 'Aplicar controle de pragas', time: 'Quinta', completed: false }
-      ],
-      alerts: ['Possível ataque de lagarta', 'Proteger da chuva intensa'],
-      weather: 'Chuva quarta (80mm)'
-    },
-    {
-      name: 'Alface',
-      emoji: '🥬',
-      area: '2.0 ha',
-      health: 85,
-      daysToHarvest: 22,
-      status: 'healthy',
-      insight: 'Irrigar em 2 dias',
-      planted: '22/Nov',
-      harvest: '05/Jan',
-      progress: 65,
-      tasks: [
-        { task: 'Verificar irrigação alface', time: '16:00', completed: false },
-        { task: 'Irrigar alface (manhã)', time: 'Quinta', completed: false }
-      ],
-      alerts: [],
-      weather: 'Sol, 32°C quinta'
-    }
-  ];
-
-  const weatherWeek = [
-    { day: 'Seg', temp: 30, icon: Sun, rain: 10 },
-    { day: 'Ter', temp: 27, icon: Sun, rain: 20 },
-    { day: 'Qua', temp: 24, icon: CloudRain, rain: 80 },
-    { day: 'Qui', temp: 32, icon: Sun, rain: 5 },
-    { day: 'Sex', temp: 29, icon: Sun, rain: 15 }
-  ];
+  }
 
   // If a crop is selected, show detailed view
   if (selectedCrop !== null) {
@@ -327,7 +228,7 @@ export function Dashboard({ onNavigateToPlanning, onNavigateToSuggestions }: { o
                 key={idx}
                 className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
               >
-                <button className="flex-shrink-0">
+                <button className="flex-shrink-0" onClick={() => handleToggleToday(idx)}>
                   {todo.completed ? (
                     <CheckCircle className="size-6 text-green-600" />
                   ) : (

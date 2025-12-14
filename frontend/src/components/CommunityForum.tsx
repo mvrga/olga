@@ -1,9 +1,19 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Send, Image, Paperclip } from 'lucide-react';
+import { getCommunityForum, type CommunityMessage } from '@/lib/api';
 
 export function CommunityForum() {
-  const messages = [
+  const [messages, setMessages] = useState<CommunityMessage[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    getCommunityForum().then((res) => mounted && setMessages(res.messages)).catch(() => {});
+    return () => { mounted = false; };
+  }, []);
+
+  const staticSeed: CommunityMessage[] = [
     {
       author: 'Maria Santos',
       avatar: 'MS',
@@ -72,7 +82,7 @@ export function CommunityForum() {
 
       {/* Messages */}
       <div className="space-y-3">
-        {messages.map((msg, idx) => (
+        {(messages.length ? messages : staticSeed).map((msg, idx) => (
           <div
             key={idx}
             className={`flex gap-3 ${msg.isMe ? 'flex-row-reverse' : ''}`}

@@ -1,9 +1,19 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { MapPin, Star, CheckCircle } from 'lucide-react';
+import { getCommunityResources, type CommunityResource } from '@/lib/api';
 
 export function ResourceSharing() {
-  const resources = [
+  const [resources, setResources] = useState<CommunityResource[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    getCommunityResources().then((res) => mounted && setResources(res.resources)).catch(() => {});
+    return () => { mounted = false; };
+  }, []);
+
+  const seed: CommunityResource[] = [
     {
       name: 'Trator Massey Ferguson',
       emoji: '🚜',
@@ -43,7 +53,7 @@ export function ResourceSharing() {
     <div className="space-y-2">
       <p className="text-gray-900">Equipamentos Disponíveis</p>
       
-      {resources.map((resource, idx) => (
+      {(resources.length ? resources : seed).map((resource, idx) => (
         <div key={idx} className="bg-white rounded-xl p-4">
           <div className="flex items-start gap-3 mb-3">
             <div className="text-4xl">{resource.emoji}</div>

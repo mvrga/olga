@@ -2,12 +2,16 @@ import { useState } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { Planejamento } from './components/Planejamento';
 import { Comunidade } from './components/Comunidade';
-import { LayoutDashboard, Users, Sprout } from 'lucide-react';
+import { LayoutDashboard, Users, Sprout, MessageSquare } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './components/ui/sheet';
+import { Button } from './components/ui/button';
+import { Chat } from './components/Chat';
 
 type Tab = 'dashboard' | 'comunidade';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [openChat, setOpenChat] = useState(false);
   const [planningView, setPlanningView] = useState<'suggestions' | 'active' | 'new' | null>(null);
 
   const handleNavigateToNewPlan = () => {
@@ -93,6 +97,26 @@ export default function App() {
         )}
         {activeTab === 'comunidade' && <Comunidade />}
       </main>
+
+      {/* Floating Chat */}
+      <Sheet open={openChat} onOpenChange={setOpenChat}>
+        <SheetTrigger asChild>
+          <Button
+            className="fixed bottom-5 right-5 h-12 w-12 rounded-full shadow-xl bg-green-600 hover:bg-green-700"
+            size="icon"
+          >
+            <MessageSquare className="size-5 text-white" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="right" className="p-0 sm:max-w-md w-full">
+          <SheetHeader className="p-4 border-b">
+            <SheetTitle>Assistente Virtual</SheetTitle>
+          </SheetHeader>
+          <div className="p-4">
+            <Chat />
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Fullscreen New Plan Modal */}
       {planningView === 'new' && (

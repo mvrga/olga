@@ -6,6 +6,7 @@ import { Dashboard } from '@/components/Dashboard';
 import { Planejamento } from '@/components/Planejamento';
 import { Comunidade } from '@/components/Comunidade';
 import { DevNav } from '@/components/DevNav';
+import { Chat } from '@/components/Chat';
 import { LayoutDashboard, Users, Sprout, LogOut } from 'lucide-react';
 
 type Tab = 'dashboard' | 'comunidade';
@@ -89,6 +90,7 @@ export default function Home() {
 
       {/* Content */}
       <main className="px-4 py-4 pb-20 md:px-8 md:py-6 max-w-7xl mx-auto">
+        <Chat />
         {activeTab === 'dashboard' && !planningView && (
           <Dashboard onNavigateToPlanning={handleNavigateToNewPlan} onNavigateToSuggestions={handleNavigateToSuggestions} />
         )}

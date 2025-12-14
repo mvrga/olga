@@ -1,82 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, Sparkles, TrendingUp, DollarSign, Droplets, Clock, ListTodo, ArrowLeft, AlertTriangle, Calendar, Sun, CloudRain } from 'lucide-react';
 import { CropPlanner } from './CropPlanner';
+import { getPlanningActive, getPlanningSuggestions, type PlanningActivePlan, type PlanningSuggestion } from '@/lib/api';
 
 type PlanTab = null | 'suggestions' | 'active' | 'new';
 
 export function Planejamento({ initialTab, onClose }: { initialTab?: PlanTab; onClose?: () => void } = {}) {
   const [activeTab, setActiveTab] = useState<PlanTab>(initialTab || null);
+  const [suggestions, setSuggestions] = useState<PlanningSuggestion[]>([]);
+  const [activePlans, setActivePlans] = useState<PlanningActivePlan[]>([]);
 
-  const suggestions = [
-    {
-      crop: 'Brócolis',
-      emoji: '🥦',
-      score: 95,
-      reason: 'Solo perfeito + clima ideal + mercado pagando 35% mais',
-      yield: '12-15 ton/ha',
-      revenue: 'R$ 18-22k',
-      water: 'Médio',
-      cycle: '70-90 dias',
-      difficulty: 'Fácil'
-    },
-    {
-      crop: 'Espinafre',
-      emoji: '🌿',
-      score: 88,
-      reason: 'Usa pouca água + demanda crescente nas feiras',
-      yield: '8-10 ton/ha',
-      revenue: 'R$ 12-15k',
-      water: 'Baixo',
-      cycle: '40-50 dias',
-      difficulty: 'Fácil'
-    },
-    {
-      crop: 'Repolho',
-      emoji: '🥬',
-      score: 85,
-      reason: 'Ótimo p/ rotação + resistente ao clima local',
-      yield: '40-50 ton/ha',
-      revenue: 'R$ 16-20k',
-      water: 'Médio',
-      cycle: '80-100 dias',
-      difficulty: 'Fácil'
-    }
-  ];
-
-  const activePlans = [
-    {
-      crop: 'Tomate',
-      emoji: '🍅',
-      area: '3.5 ha',
-      progress: 82,
-      daysRemaining: 13,
-      nextTask: 'Fertilizar amanhã',
-      health: 92,
-      status: 'healthy',
-      planted: '03/Nov',
-      harvest: '27/Dez',
-      weather: 'Chuva quarta (80mm)',
-      tasks: 2,
-      alerts: []
-    },
-    {
-      crop: 'Alface',
-      emoji: '🥬',
-      area: '2.0 ha',
-      progress: 65,
-      daysRemaining: 22,
-      nextTask: 'Irrigar em 2 dias',
-      health: 85,
-      status: 'attention',
-      planted: '22/Nov',
-      harvest: '05/Jan',
-      weather: 'Sol, 32°C quinta',
-      tasks: 1,
-      alerts: ['Umidade baixa']
-    }
-  ];
+  useEffect(() => {
+    let mounted = true;
+    getPlanningSuggestions().then((res) => mounted && setSuggestions(res.suggestions)).catch(() => {});
+    getPlanningActive().then((res) => mounted && setActivePlans(res.plans)).catch(() => {});
+    return () => { mounted = false; };
+  }, []);
 
   // Initial Menu
   if (activeTab === null) {
