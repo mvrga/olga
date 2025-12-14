@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Sparkles, TrendingUp, DollarSign, Droplets, Clock, ListTodo, ArrowLeft, AlertTriangle, Calendar, Sun, CloudRain } from 'lucide-react';
 import { CropPlanner } from './CropPlanner';
-import { getPlanningActive, getPlanningSuggestions, type PlanningActivePlan, type PlanningSuggestion } from '@/lib/api';
+import { getPlanningActive, getPlanningSuggestions, getAISuggestions, type PlanningActivePlan, type PlanningSuggestion } from '@/lib/api';
 
 type PlanTab = null | 'suggestions' | 'active' | 'new';
 
@@ -11,6 +11,12 @@ export function Planejamento({ initialTab, onClose }: { initialTab?: PlanTab; on
   const [activeTab, setActiveTab] = useState<PlanTab>(initialTab || null);
   const [suggestions, setSuggestions] = useState<PlanningSuggestion[]>([]);
   const [activePlans, setActivePlans] = useState<PlanningActivePlan[]>([]);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [city, setCity] = useState('');
+  const [stateUf, setStateUf] = useState('');
+  const [loadingAI, setLoadingAI] = useState(false);
+  const [errorAI, setErrorAI] = useState('');
+  const [prefill, setPrefill] = useState<{ crop?: string; emoji?: string } | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -92,6 +98,67 @@ export function Planejamento({ initialTab, onClose }: { initialTab?: PlanTab; on
             <p className="text-sm text-green-100">Análise baseada em solo, clima e mercado</p>
           </div>
 
+          <div className="bg-white rounded-xl p-4 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <input
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="Descreva objetivo (ex: vender na feira, pouca água)"
+                className="border rounded-md px-3 py-2 text-sm w-full"
+              />
+              <input
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="Cidade"
+                className="border rounded-md px-3 py-2 text-sm w-full"
+              />
+              <input
+                value={stateUf}
+                onChange={(e) => setStateUf(e.target.value)}
+                placeholder="UF"
+                className="border rounded-md px-3 py-2 text-sm w-full"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={async () => {
+                  setErrorAI('');
+                  setLoadingAI(true);
+                  try {
+                    const res = await getAISuggestions({ prompt: aiPrompt, city, state: stateUf });
+                    const list = res.suggestions || [];
+                    setSuggestions(list);
+                    if (list.length > 0) {
+                      setPrefill({ crop: list[0].crop, emoji: list[0].emoji });
+                      setActiveTab('new');
+                    }
+                  } catch (e) {
+                    setErrorAI('Falha ao gerar sugestões.');
+                  } finally {
+                    setLoadingAI(false);
+                  }
+                }}
+                disabled={loadingAI}
+                className={`px-4 py-2 rounded-md text-white ${loadingAI ? 'bg-green-400' : 'bg-green-600 hover:bg-green-700'}`}
+              >
+                {loadingAI ? 'Gerando…' : 'Gerar com IA'}
+              </button>
+              <button
+                onClick={async () => {
+                  setErrorAI('');
+                  try {
+                    const res = await getPlanningSuggestions();
+                    setSuggestions(res.suggestions || []);
+                  } catch {}
+                }}
+                className="px-4 py-2 rounded-md border text-gray-700"
+              >
+                Resetar
+              </button>
+              {errorAI && <span className="text-sm text-red-600">{errorAI}</span>}
+            </div>
+          </div>
+
           {suggestions.map((suggestion, idx) => (
             <div key={idx} className="bg-white rounded-xl p-4">
               <div className="flex items-start justify-between mb-3">
@@ -129,7 +196,14 @@ export function Planejamento({ initialTab, onClose }: { initialTab?: PlanTab; on
                 </div>
               </div>
 
-              <button className="w-full py-3 bg-green-600 text-white rounded-lg">
+              <button
+                onClick={() => {
+                  setActiveTab('new');
+                  // Passaremos sugestão via estado local simples
+                  setPrefill({ crop: suggestion.crop, emoji: suggestion.emoji });
+                }}
+                className="w-full py-3 bg-green-600 text-white rounded-lg"
+              >
                 Criar Plano
               </button>
             </div>
@@ -246,7 +320,7 @@ export function Planejamento({ initialTab, onClose }: { initialTab?: PlanTab; on
                 Crie um novo plano ou escolha uma sugestão
               </p>
               <button
-                onClick={() => setActiveTab('new')}
+                onClick={() => { setPrefill(null); setActiveTab('new'); }}
                 className="px-6 py-3 bg-green-600 text-white rounded-lg"
               >
                 Criar Plano
@@ -258,7 +332,14 @@ export function Planejamento({ initialTab, onClose }: { initialTab?: PlanTab; on
 
       {/* New Plan Form */}
       {activeTab === 'new' && (
-        <CropPlanner onClose={() => onClose?.()} />
+        <CropPlanner
+          onClose={() => onClose?.()}
+          initialCrop={prefill?.crop}
+          initialArea={2}
+          initialStartDate={new Date().toISOString().slice(0,10)}
+          autoGenerate={Boolean(prefill?.crop)}
+          initialEmoji={prefill?.emoji}
+        />
       )}
     </div>
   );

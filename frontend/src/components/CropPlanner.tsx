@@ -1,17 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { X, Sparkles, CheckCircle } from 'lucide-react';
 import { createPlanningPlan } from '@/lib/api';
 
 interface CropPlannerProps {
   onClose: () => void;
+  initialCrop?: string;
+  initialArea?: number | string;
+  initialStartDate?: string;
+  autoGenerate?: boolean;
+  initialEmoji?: string;
 }
 
-export function CropPlanner({ onClose }: CropPlannerProps) {
-  const [selectedCrop, setSelectedCrop] = useState('');
-  const [area, setArea] = useState('');
-  const [startDate, setStartDate] = useState('');
+export function CropPlanner({ onClose, initialCrop, initialArea, initialStartDate, autoGenerate, initialEmoji }: CropPlannerProps) {
+  const [selectedCrop, setSelectedCrop] = useState(String(initialCrop || ''));
+  const [area, setArea] = useState(String(initialArea ?? ''));
+  const [startDate, setStartDate] = useState(() => {
+    const d = String(initialStartDate || '');
+    if (d) return d;
+    return '';
+  });
   const [showPlan, setShowPlan] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -43,6 +52,20 @@ export function CropPlanner({ onClose }: CropPlannerProps) {
     'Brócolis': '🥦'
   };
 
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  useEffect(() => {
+    if (!startDate) {
+      // se vier vazio, manter vazio; se foi pedido autoGenerate, usamos hoje
+      if (autoGenerate) setStartDate(today);
+    }
+    if (autoGenerate) {
+      const ok = (String(selectedCrop || '').trim().length > 0) && (String(area || '').trim().length > 0) && (String(startDate || today).trim().length > 0);
+      if (ok) setShowPlan(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
       <div className="bg-green-600 p-4 text-white flex items-center justify-between">
@@ -67,12 +90,18 @@ export function CropPlanner({ onClose }: CropPlannerProps) {
               <label className="block text-gray-700 mb-2">
                 1. Qual cultura?
               </label>
+              {selectedCrop && !['Tomate','Alface','Couve','Cenoura','Brócolis'].includes(selectedCrop) && (
+                <div className="text-xs text-gray-600 mb-2">Sugestão da IA: {selectedCrop}</div>
+              )}
               <select
                 value={selectedCrop}
                 onChange={(e) => setSelectedCrop(e.target.value)}
                 className="w-full px-4 py-4 border border-gray-300 rounded-xl bg-white"
               >
                 <option value="">Escolher</option>
+                {selectedCrop && !['Tomate','Alface','Couve','Cenoura','Brócolis'].includes(selectedCrop) && (
+                  <option value={selectedCrop}>{cropEmojis[selectedCrop] || '🌱'} {selectedCrop}</option>
+                )}
                 <option value="Tomate">🍅 Tomate</option>
                 <option value="Alface">🥬 Alface</option>
                 <option value="Couve">🥬 Couve</option>
@@ -154,7 +183,7 @@ export function CropPlanner({ onClose }: CropPlannerProps) {
                   if (saving) return;
                   setSaving(true);
                   try {
-                    await createPlanningPlan({ crop: selectedCrop, emoji: cropEmojis[selectedCrop] || '🌱', areaHa: Number(area), startDate });
+                    await createPlanningPlan({ crop: selectedCrop, emoji: cropEmojis[selectedCrop] || initialEmoji || '🌱', areaHa: Number(area), startDate });
                   } catch {}
                   setSaving(false);
                   onClose();

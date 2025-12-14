@@ -1,12 +1,14 @@
 'use client';
 
-import { AlertTriangle, TrendingUp, Sun, CloudRain, Calendar, CheckCircle, Circle, Plus, Sparkles } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Sun, CloudRain, Calendar, CheckCircle, Circle, Plus, Sparkles, Activity } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getDashboard, toggleDashboardTodo, type DashboardData } from '@/lib/api';
+import { getDashboard, toggleDashboardTodo, getEvents, type DashboardData, type EventItem } from '@/lib/api';
 
 export function Dashboard({ onNavigateToPlanning, onNavigateToSuggestions }: { onNavigateToPlanning?: () => void; onNavigateToSuggestions?: () => void }) {
   const [selectedCrop, setSelectedCrop] = useState<number | null>(null);
   const [data, setData] = useState<DashboardData | null>(null);
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [eventsOpen, setEventsOpen] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -17,8 +19,15 @@ export function Dashboard({ onNavigateToPlanning, onNavigateToSuggestions }: { o
       .catch(() => {
         // fallback stays null; UI below handles gracefully
       });
+    let t: any;
+    const loop = async () => {
+      try { const res = await getEvents(); setEvents(res.events || []); } catch {}
+      t = setTimeout(loop, 2000);
+    };
+    loop();
     return () => {
       mounted = false;
+      clearTimeout(t);
     };
   }, []);
 
@@ -29,6 +38,7 @@ export function Dashboard({ onNavigateToPlanning, onNavigateToSuggestions }: { o
     ...w,
     icon: w.rain > 70 ? CloudRain : Sun,
   }));
+  const satellite = data?.satellite;
 
   async function handleToggleToday(index: number) {
     try {
@@ -182,6 +192,80 @@ export function Dashboard({ onNavigateToPlanning, onNavigateToSuggestions }: { o
 
   return (
     <div className="space-y-4 lg:space-y-6">
+      {satellite && (
+        <div className="bg-white rounded-xl p-4 lg:p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-5 text-green-600" />
+              <p className="text-gray-900">{satellite.label}</p>
+            </div>
+            <span className="text-xs text-gray-500">Última imagem: {satellite.ndvi.last_image_date}</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
+              <div className="h-28 w-full bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-3">
+                <div className="flex gap-1 h-full items-end">
+                  {satellite.ndvi.series_14d.map((p, i) => (
+                    <div key={i} title={`${p.date}: ${p.ndvi}`}
+                      className="flex-1 bg-green-500/70"
+                      style={{ height: `${Math.max(8, Math.min(100, Math.round(p.ndvi * 100)))}%` }} />
+                  ))}
+                </div>
+              </div>
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>14 dias</span>
+                <span>NDVI médio atual: {satellite.ndvi.current_mean.toFixed(2)}</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-sm text-gray-900 mb-1">Variação 7d</p>
+                <p className={`text-lg ${satellite.ndvi.delta_7d >= 0 ? 'text-green-600' : 'text-orange-600'}`}>{satellite.ndvi.delta_7d >= 0 ? '+' : ''}{satellite.ndvi.delta_7d.toFixed(2)}</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-sm text-gray-900 mb-1">Qualidade</p>
+                <p className="text-sm text-gray-600 capitalize">{satellite.ndvi.quality}</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-sm text-gray-900 mb-1">Clima (demo)</p>
+                <p className="text-xs text-gray-600">Chuva 7d: {satellite.weather_demo.rain_next_7d_mm} mm</p>
+                <p className="text-xs text-gray-600">Máx. 3d: {satellite.weather_demo.temp_max_next_3d_c}°C</p>
+              </div>
+            </div>
+          </div>
+          {satellite.insights?.length > 0 && (
+            <div className="mt-3 grid md:grid-cols-3 gap-2">
+              {satellite.insights.map((ins, i) => (
+                <div key={i} className="bg-green-50 rounded-lg p-2 text-xs text-green-900">• {ins}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      <div className="bg-white rounded-xl p-4 lg:p-5">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Activity className="size-5 text-purple-600" />
+            <p className="text-gray-900">Eventos em Tempo Real</p>
+            <span className="text-xs text-gray-500">{events.length}</span>
+          </div>
+          <button onClick={() => setEventsOpen((v) => !v)} className="text-xs text-gray-600 hover:text-gray-900">{eventsOpen ? 'Esconder' : 'Mostrar'}</button>
+        </div>
+        {eventsOpen && (
+          <div className="max-h-64 overflow-y-auto divide-y">
+            {events.slice().reverse().map((e, idx) => (
+              <div key={idx} className="py-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-800">{e.type}</span>
+                  <span className="text-[10px] text-gray-500">{new Date(e.time).toLocaleTimeString()}</span>
+                </div>
+                <p className="text-sm text-gray-700">{e.message}</p>
+              </div>
+            ))}
+            {events.length === 0 && <div className="text-xs text-gray-500">Sem eventos</div>}
+          </div>
+        )}
+      </div>
       {/* Crop Selection Buttons */}
       <div className="grid grid-cols-2 gap-3">
         {crops.map((crop, idx) => (

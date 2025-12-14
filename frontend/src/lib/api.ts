@@ -1,10 +1,11 @@
-const API_BASE: string = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8001';
+const API_BASE: string = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${API_BASE}${path}`;
   const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
+      ...(localStorage.getItem('auth_token') ? { 'x-auth-token': localStorage.getItem('auth_token') as string } : {}),
       ...(init?.headers || {}),
     },
     ...init,
@@ -32,6 +33,25 @@ export async function decide(text: string): Promise<{ status?: string; data?: un
 
 export { API_BASE };
 
+export async function authSignup(input: { name: string; email: string; password: string }): Promise<{ ok: boolean; user?: { name: string; email: string }; error?: string }>{
+  return request('/auth/signup', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function authLogin(input: { email: string; password: string }): Promise<{ ok: boolean; token?: string; user?: { name: string; email: string }; error?: string }>{
+  return request('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function authMe(token?: string): Promise<{ ok: boolean; user?: { name: string; email: string }; error?: string }>{
+  const t = token || localStorage.getItem('auth_token') || '';
+  return request(`/auth/me?token=${encodeURIComponent(String(t))}`);
+}
+
 export type DashboardCrop = {
   name: string;
   emoji: string;
@@ -53,6 +73,19 @@ export type DashboardData = {
   todosToday: { task: string; crop: string; time: string; completed: boolean }[];
   todosWeek: { day: string; task: string; crop: string }[];
   weatherWeek: { day: string; temp: number; rain: number }[];
+  satellite: {
+    label: string;
+    location: { lat: number; lon: number };
+    ndvi: {
+      current_mean: number;
+      delta_7d: number;
+      last_image_date: string;
+      quality: string;
+      series_14d: { date: string; ndvi: number }[];
+    };
+    weather_demo: { label: string; rain_next_7d_mm: number; temp_max_next_3d_c: number };
+    insights: string[];
+  };
 };
 
 export async function getDashboard(): Promise<DashboardData> {
@@ -64,6 +97,14 @@ export async function toggleDashboardTodo(index: number): Promise<DashboardData>
     method: 'POST',
     body: JSON.stringify({ index }),
   });
+}
+
+export type EventItem = { time: string; type: string; message: string; meta: Record<string, unknown> };
+export async function getEvents(): Promise<{ events: EventItem[] }> {
+  return request('/events');
+}
+export async function clearEvents(): Promise<{ cleared: boolean }> {
+  return request('/events', { method: 'DELETE' });
 }
 
 export type PlanningSuggestion = {
@@ -104,6 +145,13 @@ export async function getPlanningActive(): Promise<{ plans: PlanningActivePlan[]
 
 export async function createPlanningPlan(input: { crop: string; emoji: string; areaHa: number; startDate: string }): Promise<{ created: PlanningActivePlan; plans: PlanningActivePlan[] }> {
   return request('/planning/active', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function getAISuggestions(input: { prompt: string; city?: string; state?: string }): Promise<{ suggestions: PlanningSuggestion[] }> {
+  return request('/planning/suggestions/ai', {
     method: 'POST',
     body: JSON.stringify(input),
   });

@@ -2,8 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from app.routes.whatsapp import router as whatsapp_router
-from app.agents import decidir_resposta
+from app.agents import decidir_resposta, gerar_sugestoes_ai
 from app import stores
+from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -22,6 +23,35 @@ app.include_router(whatsapp_router)
 def health():
     return {"status": "ok"}
 
+class SignupIn(BaseModel):
+    name: str
+    email: str
+    password: str
+
+class LoginIn(BaseModel):
+    email: str
+    password: str
+
+@app.post("/auth/signup")
+def auth_signup(payload: SignupIn):
+    return stores.create_user(payload.name, payload.email, payload.password)
+
+@app.post("/auth/login")
+def auth_login(payload: LoginIn):
+    return stores.login_user(payload.email, payload.password)
+
+@app.get("/auth/me")
+def auth_me(token: str | None = None):
+    return stores.get_user_by_token(token)
+
+@app.get("/events")
+def events_list():
+    return stores.get_events()
+
+@app.delete("/events")
+def events_clear():
+    return stores.clear_events()
+
 @app.post("/decide")
 def decide(data: dict):
     mensagem_usuario = str(data.get("texto") or data.get("text") or data.get("message") or "")
@@ -32,6 +62,18 @@ def decide(data: dict):
         "data": data,
         "reply": resposta_agente
     }
+
+
+class SuggestionIn(BaseModel):
+    prompt: str = ""
+    city: str | None = None
+    state: str | None = None
+
+
+@app.post("/planning/suggestions/ai")
+def planning_suggestions_ai(payload: SuggestionIn):
+    sugestoes = gerar_sugestoes_ai(payload.model_dump())
+    return {"suggestions": sugestoes}
 
 @app.get("/dashboard")
 def get_dashboard():

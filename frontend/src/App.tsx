@@ -6,10 +6,12 @@ import { LayoutDashboard, Users, Sprout, MessageSquare } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './components/ui/sheet';
 import { Button } from './components/ui/button';
 import { Chat } from './components/Chat';
+import { Login } from './components/Login';
 
 type Tab = 'dashboard' | 'comunidade';
 
 export default function App() {
+  const [authed, setAuthed] = useState<boolean>(Boolean(globalThis?.localStorage?.getItem('auth_token')));
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [openChat, setOpenChat] = useState(false);
   const [planningView, setPlanningView] = useState<'suggestions' | 'active' | 'new' | null>(null);
@@ -31,6 +33,10 @@ export default function App() {
     setPlanningView(null);
   };
 
+  if (!authed) {
+    return <Login onAuthenticated={() => setAuthed(true)} />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header - Mobile Optimized */}
@@ -46,8 +52,19 @@ export default function App() {
                 <p className="text-xs text-gray-600">Fazenda São José</p>
               </div>
             </div>
-            <div className="size-10 bg-green-600 rounded-full flex items-center justify-center text-white">
-              <span>JS</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  try { localStorage.removeItem('auth_token'); } catch {}
+                  setAuthed(false);
+                }}
+                className="text-xs text-gray-600 hover:text-gray-900 border rounded-md px-3 py-1"
+              >
+                Sair
+              </button>
+              <div className="size-10 bg-green-600 rounded-full flex items-center justify-center text-white">
+                <span>JS</span>
+              </div>
             </div>
           </div>
         </div>
