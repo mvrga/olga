@@ -1,4 +1,4 @@
-# Olga — Plataforma de Gestão Agrícola
+# Meu agrônomo (Olga) — Plataforma de Gestão Agrícola
 
 Manual de execução e teste para a banca. Este repositório contém:
 - Backend FastAPI (Python) em `backend/`
